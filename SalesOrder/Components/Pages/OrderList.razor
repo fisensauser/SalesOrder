@@ -1,0 +1,126 @@
+﻿@page "/orderlist"
+@rendermode InteractiveServer
+@using BlazorBootstrap
+@using SalesOrder.Models
+@using SalesOrder.Data;
+@inject AppDbContext appDbContext;
+
+<h3>OrderList</h3>
+<table>
+    <tr>
+        <th>Number</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Customer Name</th>
+        <th>Date/Time</th>
+
+    </tr>
+    @foreach (var order in appDbContext.Order)
+    {
+
+        <tr>
+            <td><label @onclick="()=>SelectOrderLines(order.OrderId)">@order.OrderNumber</label> </td>
+            <td><label>@orderTypes.FirstOrDefault(x => x.Id == order.OrderTypeID).OrderTypeName </label></td>
+            <td><label>@orderStatuses.FirstOrDefault(x => x.Id == order.OrderStatusID).Description </label></td>
+            <td>@order.CustomerName </td>
+            <td>@order.OrderDate </td>
+
+        </tr>
+
+        <tr>
+            <td>
+
+               
+            </td>
+        </tr>
+        
+     
+
+
+    }
+</table>
+<table id="linestbl-orderid">
+
+    <tr>
+
+        <th>
+            Line Number
+        </th>
+        <th>
+            Product Code
+        </th>
+        <th>
+            Product Type
+        </th>
+        <th>
+            Cost Price
+        </th>
+        <th>
+            Sales Price
+        </th>
+        <th>
+            Quantity
+        </th>
+
+    </tr>
+    }
+    @if(ordersViewModel.OrderLines.Where(x => x.OrderId == orderid).Any())
+    foreach (var line in ordersViewModel.OrderLines.Where(x => x.OrderId == orderid))
+    {
+
+        <tr>
+
+            <td>@line.LineNumber</td>
+            <td><input type="text" id="productcode" @bind="line.ProductCode"></input></td>
+            <td>
+                <select @bind="line.ProductTypeId">
+                    @foreach (var o in productTypes)
+                    {
+                        <option id="pl-@line.OrderLineId" value="@o.Id">@o.ProductTypeName</option>
+                    }
+                </select>
+            </td>
+            <td><input type="text" id="productcost" @bind="line.ProductCostP"></input></td>
+
+            <td><input type="text" id="productsale" @bind="line.ProductSalesP"></input></td>
+
+            <td><input type="text" id="quantity" @bind="line.Quantity"></input></td>
+
+        </tr>
+
+
+    }
+</table>
+
+
+@code {
+
+    public OrdersViewModel ordersViewModel { get; set; } = new();
+    List<OrderType> orderTypes = new List<OrderType>();
+    List<OrderStatus> orderStatuses = new List<OrderStatus>();
+    List<ProductType> productTypes = new List<ProductType>();
+    List<String?> orderNames = new List<String?>();
+    long orderid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ordersViewModel.Order = new Order();
+        ordersViewModel.OrderLines = appDbContext.OrderLines.ToList();
+        orderTypes = appDbContext.OrderTypes.ToList();
+        orderStatuses = appDbContext.OrderStatus.ToList();
+        productTypes = appDbContext.ProductTypes.ToList();
+        orderNames = appDbContext.Order.Select(x => x.OrderNumber).ToList();
+    }
+    private bool HasOrders(Order o)
+    {
+
+        return ordersViewModel.OrderLines.Where(x => x.OrderId == o.OrderId).Any();
+
+
+    }
+    private void SelectOrderLines(long id)
+    {
+        orderid = id;
+
+    }
+}

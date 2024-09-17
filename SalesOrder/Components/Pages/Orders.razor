@@ -1,0 +1,234 @@
+﻿@page "/orders"
+@rendermode InteractiveServer
+@using BlazorBootstrap
+@using SalesOrder.Models
+@using SalesOrder.Data;
+@inject AppDbContext appDbContext;
+<PageTitle>Orders</PageTitle>
+
+<h1>Orders</h1>
+
+
+
+
+
+<EditForm Model="@ordersViewModel" OnValidSubmit="SubmitForm" FormName="OrderForm"> 
+    <div class="top-row w-50 align-content-center">
+        <div class="row">
+            <label>Order Number:</label> <input type="text" id="orderNumber" @bind="ordersViewModel.Order.OrderNumber"/>
+            <Button id="searchbutton" @onclick="OnClick" value="">Search</Button>
+        </div>
+     
+        <div class="row">
+            <label for="ordertype">Order Type:</label>
+            <select id="ordertype" @bind="ordersViewModel.Order.OrderTypeID">
+                @foreach (var opt in orderTypes)
+                {
+                    <option id="opt-@opt.Id" value="@opt.Id">@opt.OrderTypeName</option>
+                }
+
+            </select>
+        </div>
+        <div class="row">
+            <label for="orderstatus">Order Status:</label>
+            <select id="orderstatus" @bind="ordersViewModel.Order.OrderStatusID">
+                @foreach (var ost in orderStatuses)
+                {
+                    <option id="ost-@ost.Id" value="@ost.Id">@ost.Description</option>
+                }
+            </select>
+        </div>
+        <divclass ="row">
+            <label>Customer name:</label><input type="text" id="customername" @bind="ordersViewModel.Order.CustomerName" />
+        </divclass>
+        <div class="row">
+            <div class='col-sm-6'>
+                <div class="form-group">
+
+                    <div class='input-group date' >
+                        <label>Date and Time: </label>
+                        <input type="text" id="datetimepicker" @bind="ordersViewModel.Order.OrderDate" />
+                        <script>
+                           
+                            $(document).ready(function () {
+                                $('#datetimepicker').datetimepicker({
+                                    format: 'Y-m-d H:i', // Specify the format for date and time (e.g. 2023-09-16 12:30)
+                                    step: 30, // Time step in minutes (30 minutes increment)
+                                    minDate: 0
+                                });
+                            });
+                          
+
+                        </script>
+                       
+                    </div>
+                </div>
+            </div>
+        </div>
+     
+    </div>
+    <Button id="newbutton" @onclick="OnClickNew" value="">Add Order</Button><button type="submit" id="button1"> Update</button>
+</EditForm>
+<hr>
+<h1>Order Lines</h1>
+<EditForm Model="@ordersViewModel">
+    <table>
+
+        <th>Line Number</th>
+        <th>Product Code</th>
+        <th>Product Type</th>
+        <th>Product Cost Price</th>
+        <th>Product Sales Price</th>
+        <th>Quantity</th>
+       
+        @foreach (var line in ordersViewModel.OrderLines)
+        {
+            
+            <tr>
+                <td>@line.LineNumber</td>
+                <td><input type="text" id="productcode" @bind="line.ProductCode"></input></td>
+                <td>
+                    <select @bind="line.ProductTypeId">
+                        @foreach (var o in productTypes)
+                        {
+                            <option id="pl-@line.OrderLineId" value="@o.Id">@o.ProductTypeName</option>
+                        }
+                    </select>
+                </td>
+                 <td><input type="text" id="productcost" @bind="line.ProductCostP"></input></td>
+
+                <td><input type="text" id="productsale" @bind="line.ProductSalesP"></input></td>
+
+                <td><input type="text" id="quantity" @bind="line.Quantity"></input></td>
+
+            </tr>
+
+        }
+    </table>
+    <Button id="newbutton" @onclick="NewOrderLine" value="">New Line</Button>
+    <Button id="newbutton" @onclick="DeleteLine" value="">Delete Line</Button>
+    <Button id="newbutton" @onclick="SaveLines" value="">Save Lines</Button>
+</EditForm>
+
+@code {
+    public OrdersViewModel ordersViewModel { get; set; } = new();
+    List<OrderType> orderTypes = new List<OrderType>();
+    List<OrderStatus> orderStatuses = new List<OrderStatus>();
+    List<ProductType> productTypes = new List<ProductType>();
+    List<String?> orderNames = new List<String?>();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (!appDbContext.Order.Any())
+        {
+            CreateNewOrder();
+        }
+        ordersViewModel.Order = appDbContext.Order.First();
+        ordersViewModel.OrderLines = appDbContext.OrderLines.Where(x => x.OrderId == ordersViewModel.Order.OrderId).ToList();
+        orderTypes = appDbContext.OrderTypes.ToList();
+        orderStatuses = appDbContext.OrderStatus.ToList();
+        productTypes = appDbContext.ProductTypes.ToList();
+        orderNames = appDbContext.Order.Select(x => x.OrderNumber).ToList();
+
+
+        // appDbContext.ChangeTracker.Clear();
+        // appDbContext.Order.Update(new Order { OrderId = 2, OrderNumber = "test", OrderTypeID = 1, OrderStatusID = 2 });
+        // apDbContext.Order.Add(new Order { OrderNumber = "test2", OrderTypeID = 1, OrderStatusID = 2 });
+
+
+    }
+
+    public void CreateNewOrder()
+    {
+        var a = ordersViewModel.Order = new Order()
+            {
+                OrderNumber = "",
+                OrderStatusID = 1,
+                OrderTypeID = 1
+            };
+        appDbContext.Order.Add(a);
+        ordersViewModel.Order = a;
+        appDbContext.SaveChanges();
+    }
+
+    public void setOrderStatus(string val)
+    {
+        ordersViewModel.Order.OrderNumber = (val);
+    }
+
+    private async Task SubmitForm()
+    {
+        OnClick();
+        //  var s = ordersViewModel;
+        //   HttpClient.DefaultProxy.GetProxy(new Uri("/"));
+    }
+    private void OnClick()
+    {
+        var a = ordersViewModel.Order.OrderNumber;
+        if (orderNames.Contains(a))
+            try
+            {
+                ordersViewModel.Order = appDbContext.Order.Where(x => x.OrderNumber == a).FirstOrDefault();
+                ordersViewModel.OrderLines = appDbContext.OrderLines.Where(x => x.OrderId == ordersViewModel.Order.OrderId).ToList();
+            }
+            catch
+            {
+
+            }
+        else
+        {
+            CreateNewOrder();      
+        }
+    }
+    private void OnClickNew()
+    {
+        var a = ordersViewModel.Order = new Order() 
+        { 
+            OrderNumber="", 
+            OrderStatusID=1,
+        OrderTypeID=1};
+        appDbContext.Order.Add(a);
+        ordersViewModel.Order = a;
+        appDbContext.SaveChanges();
+    }
+    private void SaveLines(MouseEventArgs e)
+    {
+        appDbContext.SaveChanges();
+    }
+
+    private void DeleteLine(MouseEventArgs e)
+    {
+        if (ordersViewModel.OrderLines.Any())
+        {
+            ordersViewModel.OrderLines.RemoveAt(ordersViewModel.OrderLines.Count - 1);
+        }
+
+
+    }
+    private void NewOrderLine(MouseEventArgs e)
+    {
+        var cnt = 1;
+        try
+        {
+            cnt = ordersViewModel.OrderLines.Where(x => x.OrderId == ordersViewModel.Order.OrderId).Max(a => a.LineNumber);
+            cnt += 1;
+        }
+        catch { }
+        var ol = new OrderLine()
+        {
+                LineNumber = cnt,
+                OrderId = ordersViewModel.Order.OrderId,
+                ProductCode = "",
+                ProductCostP = 0,
+                ProductSalesP = 0,
+                ProductTypeId = 1,
+                Quantity = "0"
+            };
+        ordersViewModel.OrderLines.Add(ol);
+        appDbContext.OrderLines.Add(ol);
+        appDbContext.SaveChanges();
+    }
+}
+
+}
